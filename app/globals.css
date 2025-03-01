@@ -1,24 +1,396 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-@theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Dark mode values inspired by the references */
+    --background: 225 30% 6%;
+    --foreground: 0 0% 98%;
+
+    --card: 226 30% 8%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 226 30% 8%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 215 100% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 226 30% 12%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 225 25% 15%;
+    --muted-foreground: 220 15% 65%;
+
+    --accent: 215 100% 60%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 225 25% 15%;
+    --input: 225 25% 15%;
+    --ring: 215 100% 60%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 225 35% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 215 100% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 225 25% 12%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 225 25% 15%;
+    --sidebar-ring: 215 100% 60%;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@font-face {
+  font-family: 'Satoshi';
+  src: url('https://fonts.cdnfonts.com/css/satoshi') format('woff2');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
 }
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  *::selection {
+    background-color: hsl(var(--primary) / 0.1);
+    color: hsl(var(--primary));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'ss01', 'ss02', 'cv01', 'cv02', 'cv03';
+    background-image: radial-gradient(
+      circle at 50% 0%,
+      rgba(59, 130, 246, 0.1) 0%,
+      rgba(0, 0, 0, 0) 50%
+    );
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    overflow: hidden; /* Prevent body scrolling */
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Custom utility classes */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.glass-panel {
+  background: rgba(30, 41, 59, 0.2);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+.glass-panel:hover {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.glass-card {
+  backdrop-filter: blur(8px);
+  background-color: rgba(17, 19, 31, 0.8);
+  border: 1px solid rgba(30, 41, 59, 0.5);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  background-color: rgba(22, 24, 38, 0.9);
+}
+
+.text-gradient {
+  background-image: linear-gradient(
+    to bottom right,
+    white,
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.7)
+  );
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-blue {
+  background-image: linear-gradient(to bottom right, #60a5fa, #3b82f6, #2563eb);
+  background-clip: text;
+  color: transparent;
+}
+
+.slide-up {
+  animation: slideUp 0.5s ease forwards;
+  opacity: 0;
+}
+
+.slide-up-delay-1 {
+  animation: slideUp 0.5s ease 0.1s forwards;
+  opacity: 0;
+}
+
+.slide-up-delay-2 {
+  animation: slideUp 0.5s ease 0.2s forwards;
+  opacity: 0;
+}
+
+.slide-up-delay-3 {
+  animation: slideUp 0.5s ease 0.3s forwards;
+  opacity: 0;
+}
+
+.glow {
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Add noise effects */
+.noise-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.noise-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.03;
+  z-index: 1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.noise-subtle {
+  position: relative;
+  overflow: hidden;
+}
+
+.noise-subtle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.02;
+  z-index: 1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.card-noise {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-noise::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.015;
+  z-index: 1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Enhanced button styles */
+.btn-gradient {
+  background: linear-gradient(to right, var(--sidebar-primary), rgba(var(--sidebar-primary), 0.7));
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-gradient::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.btn-gradient:hover::after {
+  transform: translateX(100%);
+}
+
+/* Fixed sidebar and scrollable main content */
+.sidebar-fixed {
+  position: fixed;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.sidebar-fixed::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.main-content {
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.main-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.main-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.main-content::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Sidebar toggle button styles */
+.sidebar-toggle {
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-toggle:hover {
+  background-color: hsl(var(--sidebar-accent));
+  transform: translateX(2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Fix for collapsed sidebar elements */
+.sidebar-fixed.collapsed .sidebar-user-avatar {
+  position: relative;
+  z-index: 20;
+}
+
+.sidebar-fixed.collapsed .sidebar-toggle-btn {
+  position: absolute;
+  top: 16px;
+  right: -30px;
+  z-index: 50;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background-color: hsl(var(--sidebar-background));
+  border: 1px solid hsl(var(--sidebar-border));
+  border-radius: 0 4px 4px 0;
+}
+
+/* Add this to your global CSS if it doesn't exist already */
+.bg-noise {
+  background-image: url('/noise.png');
+  background-repeat: repeat;
+}
+
+.bg-sidebar {
+  background-color: hsl(var(--sidebar-background));
+}
+
+/* Solid primary color palette based on #11151f */
+.bg-primary-solid {
+  background-color: #11151f;
+}
+
+.bg-primary-solid-light {
+  background-color: #1a2030;
+}
+
+.bg-primary-solid-lighter {
+  background-color: #232940;
+}
+
+.bg-primary-solid-dark {
+  background-color: #0d1119;
+}
+
+.bg-primary-solid-darker {
+  background-color: #090c12;
+}
+
+/* Add noise effect to primary colors */
+.bg-primary-solid.bg-noise,
+.bg-primary-solid-light.bg-noise,
+.bg-primary-solid-lighter.bg-noise,
+.bg-primary-solid-dark.bg-noise,
+.bg-primary-solid-darker.bg-noise {
+  position: relative;
+}
+
+.bg-primary-solid.bg-noise::before,
+.bg-primary-solid-light.bg-noise::before,
+.bg-primary-solid-lighter.bg-noise::before,
+.bg-primary-solid-dark.bg-noise::before,
+.bg-primary-solid-darker.bg-noise::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.03;
+  z-index: 1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Remove this since we're applying the styles directly in the component */
+/* .select-content {
+  @apply bg-sidebar bg-noise;
+} */
