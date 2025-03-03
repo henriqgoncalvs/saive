@@ -8,6 +8,12 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Transaction } from '../_types';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -181,6 +187,16 @@ export function TransactionModal({ isOpen, onOpenChange, transaction }: Transact
               </div>
             </>
           )}
+          <Accordion type="single" collapsible className="overflow-x-auto">
+            <AccordionItem value="transaction">
+              <AccordionTrigger>Transaction Details</AccordionTrigger>
+              <AccordionContent>
+                <pre className="max-w-full overflow-x-auto text-xs">
+                  {JSON.stringify(transaction, null, 2)}
+                </pre>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       </DialogContent>
     </Dialog>

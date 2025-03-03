@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { CreditCard, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,6 +9,19 @@ import { Account, Category, Transaction } from '../_types';
 import { TransactionTable } from './transaction-table';
 import { ResumeView } from './resume-view';
 import { TransactionModal } from './transaction-modal';
+import { useQuery, useQueries, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Create a client
+const queryClient = new QueryClient();
+
+// Wrap the component with QueryClientProvider
+export function TransactionsClientWithProvider() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TransactionsClient />
+    </QueryClientProvider>
+  );
+}
 
 export function TransactionsClient() {
   // State for filters - per account
@@ -20,35 +33,47 @@ export function TransactionsClient() {
   // State for active tab
   const [activeTab, setActiveTab] = useState('resume');
 
-  // State for data
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [transactionsByAccount, setTransactionsByAccount] = useState<Record<string, Transaction[]>>(
-    {}
-  );
-
   // State for pagination - per account
   const [pages, setPages] = useState<Record<string, number>>({});
-  const [totalPages, setTotalPages] = useState<Record<string, number>>({});
-  const [totalTransactions, setTotalTransactions] = useState<Record<string, number>>({});
   const [pageSizes, setPageSizes] = useState<Record<string, number>>({});
 
   // State for UI
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Debounced search terms
   const debouncedSearchTerms = useDebounce(searchTerms, 500);
 
-  // Add this state for grouped transactions
-  const [groupedResumeTransactions, setGroupedResumeTransactions] = useState<
-    Record<string, { accountName: string; transactions: Transaction[] }>
-  >({});
+  // Fetch accounts using TanStack Query
+  const {
+    data: accounts = [],
+    isLoading: isLoadingAccounts,
+    error: accountsError,
+  } = useQuery<Account[], Error>({
+    queryKey: ['accounts'],
+    queryFn: async () => {
+      const response = await PluggyService.getAllAccounts();
+      return response.accounts || [];
+    },
+  });
 
-  // Add a ref to track if we've already fetched resume data
-  const resumeDataFetchedRef = useRef(false);
+  // Fetch categories using TanStack Query
+  const {
+    data: categories = [],
+    // We don't need to track loading state for categories as it's not critical
+  } = useQuery<Category[], Error>({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const response = await fetch('/api/pluggy/categories');
+      if (!response.ok) {
+        throw new Error('Failed to fetch categories');
+      }
+      const data = await response.json();
+      return data.categories || [];
+    },
+    // Don't show error for categories as it's not critical
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour
+  });
 
   // Initialize account-specific states when accounts are loaded
   useEffect(() => {
@@ -78,141 +103,96 @@ export function TransactionsClient() {
     }
   }, [accounts]);
 
-  // Fetch accounts
-  useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const response = await PluggyService.getAllAccounts();
-        setAccounts(response.accounts || []);
-      } catch (err) {
-        console.error('Error fetching accounts:', err);
-        setError('Failed to load accounts. Please try again later.');
-      }
-    };
-
-    fetchAccounts();
-  }, []);
-
-  // Fetch categories
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch('/api/pluggy/categories');
-        if (!response.ok) {
-          throw new Error('Failed to fetch categories');
-        }
-        const data = await response.json();
-        setCategories(data.categories || []);
-      } catch (err) {
-        console.error('Error fetching categories:', err);
-        // Don't set error state for categories as it's not critical
-      }
-    };
-
-    fetchCategories();
-  }, []);
-
-  // Fetch transactions for a specific account
+  // Fetch transactions for a specific account using TanStack Query
   const fetchAccountTransactions = async (accountId: string) => {
-    try {
-      const baseParams = new URLSearchParams();
+    const baseParams = new URLSearchParams();
 
-      // Add account ID
-      baseParams.append('accountId', accountId);
+    // Add account ID
+    baseParams.append('accountId', accountId);
 
-      // Add search term if provided
-      if (debouncedSearchTerms[accountId]) {
-        baseParams.append('search', debouncedSearchTerms[accountId]);
-      }
-
-      // Add category filter if selected
-      if (selectedCategories[accountId] && selectedCategories[accountId] !== 'all') {
-        baseParams.append('categoryId', selectedCategories[accountId]);
-      }
-
-      // Add transaction type filter if selected
-      if (selectedTypes[accountId] && selectedTypes[accountId] !== 'all') {
-        baseParams.append('type', selectedTypes[accountId]);
-      }
-
-      // Add date range filter
-      if (selectedDateRanges[accountId] && selectedDateRanges[accountId] !== 'all') {
-        const today = new Date();
-        let fromDate;
-
-        if (selectedDateRanges[accountId] === 'today') {
-          fromDate = new Date(today);
-          fromDate.setHours(0, 0, 0, 0);
-        } else if (selectedDateRanges[accountId] === 'week') {
-          fromDate = new Date(today);
-          fromDate.setDate(today.getDate() - 7);
-        } else if (selectedDateRanges[accountId] === 'month') {
-          fromDate = new Date(today);
-          fromDate.setMonth(today.getMonth() - 1);
-        }
-
-        if (fromDate) {
-          baseParams.append('from', fromDate.toISOString().split('T')[0]);
-          baseParams.append('to', today.toISOString().split('T')[0]);
-        }
-      }
-
-      // Add pagination parameters
-      baseParams.append('page', pages[accountId]?.toString() || '1');
-      baseParams.append('pageSize', pageSizes[accountId]?.toString() || '100');
-
-      const response = await fetch(`/api/pluggy/transactions?${baseParams}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch transactions for account ${accountId}`);
-      }
-
-      const data = await response.json();
-
-      // Add account name to each transaction
-      const account = accounts.find((acc) => acc.id === accountId);
-      const transactionsWithAccountName = data.transactions.map((transaction: Transaction) => ({
-        ...transaction,
-        accountName: account?.name || 'Unknown Account',
-      }));
-
-      // Update transactions for this account
-      setTransactionsByAccount((prev) => ({
-        ...prev,
-        [accountId]: transactionsWithAccountName,
-      }));
-
-      // Update pagination state for this account
-      setTotalPages((prev) => ({
-        ...prev,
-        [accountId]: data.totalPages,
-      }));
-
-      setTotalTransactions((prev) => ({
-        ...prev,
-        [accountId]: data.total,
-      }));
-
-      return transactionsWithAccountName;
-    } catch (err) {
-      console.error(`Error fetching transactions for account ${accountId}:`, err);
-      return [];
+    // Add search term if provided
+    if (debouncedSearchTerms[accountId]) {
+      baseParams.append('search', debouncedSearchTerms[accountId]);
     }
+
+    // Add category filter if selected
+    if (selectedCategories[accountId] && selectedCategories[accountId] !== 'all') {
+      baseParams.append('categoryId', selectedCategories[accountId]);
+    }
+
+    // Add transaction type filter if selected
+    if (selectedTypes[accountId] && selectedTypes[accountId] !== 'all') {
+      baseParams.append('type', selectedTypes[accountId]);
+    }
+
+    // Add date range filter
+    if (selectedDateRanges[accountId] && selectedDateRanges[accountId] !== 'all') {
+      const today = new Date();
+      let fromDate;
+
+      if (selectedDateRanges[accountId] === 'today') {
+        fromDate = new Date(today);
+        fromDate.setHours(0, 0, 0, 0);
+      } else if (selectedDateRanges[accountId] === 'week') {
+        fromDate = new Date(today);
+        fromDate.setDate(today.getDate() - 7);
+      } else if (selectedDateRanges[accountId] === 'month') {
+        fromDate = new Date(today);
+        fromDate.setMonth(today.getMonth() - 1);
+      }
+
+      if (fromDate) {
+        baseParams.append('from', fromDate.toISOString().split('T')[0]);
+        baseParams.append('to', today.toISOString().split('T')[0]);
+      }
+    }
+
+    // Add pagination parameters
+    baseParams.append('page', pages[accountId]?.toString() || '1');
+    baseParams.append('pageSize', pageSizes[accountId]?.toString() || '100');
+
+    const response = await fetch(`/api/pluggy/transactions?${baseParams}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch transactions for account ${accountId}`);
+    }
+
+    const data = await response.json();
+
+    // Add account name to each transaction
+    const account = accounts.find((acc) => acc.id === accountId);
+    const transactionsWithAccountName = data.transactions.map((transaction: Transaction) => ({
+      ...transaction,
+      accountName: account?.name || 'Unknown Account',
+    }));
+
+    return {
+      transactions: transactionsWithAccountName,
+      totalPages: data.totalPages,
+      total: data.total,
+    };
   };
 
-  // Fetch resume transactions (latest 20 from each account)
-  const fetchResumeTransactions = async () => {
-    console.log('fetchResumeTransactions called'); // Debug log
-    try {
-      setLoading(true);
+  // Use TanStack Query to fetch transactions for the active account
+  const { data: activeAccountData, isLoading: isLoadingTransactions } = useQuery({
+    queryKey: [
+      'transactions',
+      activeTab,
+      debouncedSearchTerms[activeTab],
+      selectedCategories[activeTab],
+      selectedTypes[activeTab],
+      selectedDateRanges[activeTab],
+      pages[activeTab],
+      pageSizes[activeTab],
+    ],
+    queryFn: () => fetchAccountTransactions(activeTab),
+    enabled: activeTab !== 'resume' && accounts.length > 0,
+  });
 
-      // Create an object to store transactions by account
-      const transactionsByAccount: Record<
-        string,
-        { accountName: string; transactions: Transaction[] }
-      > = {};
-
-      // Process all accounts first
-      for (const account of accounts) {
+  // Fetch resume transactions (latest 20 from each account) using TanStack Query
+  const accountQueries = useQueries({
+    queries: accounts.map((account) => ({
+      queryKey: ['resumeTransactions', account.id],
+      queryFn: async () => {
         const params = new URLSearchParams();
         params.append('accountId', account.id);
         params.append('page', '1');
@@ -235,65 +215,32 @@ export function TransactionsClient() {
             new Date(b.date).getTime() - new Date(a.date).getTime()
         );
 
-        // Store in the grouped object
-        transactionsByAccount[account.id] = {
+        return {
+          accountId: account.id,
           accountName: account.name,
           transactions: accountTransactions,
         };
-      }
+      },
+      enabled: activeTab === 'resume' && accounts.length > 0,
+    })),
+  });
 
-      // After all accounts are processed, update state once
-      setGroupedResumeTransactions(transactionsByAccount);
-    } catch (err) {
-      console.error('Error fetching resume transactions:', err);
-      setError('Failed to load transactions. Please try again later.');
-    } finally {
-      setLoading(false);
+  // Process resume transactions data
+  const isLoadingResumeTransactions =
+    activeTab === 'resume' && accountQueries.some((query) => query.isLoading);
+  const resumeTransactionsError =
+    activeTab === 'resume' && accountQueries.some((query) => query.error);
+
+  // Convert the array of query results to the format expected by ResumeView
+  const groupedResumeTransactions = accountQueries.reduce((acc, query) => {
+    if (query.data) {
+      acc[query.data.accountId] = {
+        accountName: query.data.accountName,
+        transactions: query.data.transactions,
+      };
     }
-  };
-
-  // Modify the existing useEffect to avoid duplicate calls
-  useEffect(() => {
-    const fetchData = async () => {
-      if (accounts.length === 0) return;
-
-      setLoading(true);
-
-      try {
-        if (activeTab === 'resume') {
-          // Only fetch resume data if we haven't already or if accounts changed
-          if (!resumeDataFetchedRef.current) {
-            console.log('Fetching resume transactions (first time)');
-            await fetchResumeTransactions();
-            resumeDataFetchedRef.current = true;
-          }
-        } else {
-          await fetchAccountTransactions(activeTab);
-        }
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to load transactions. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [accounts, activeTab]);
-
-  // Fetch transactions when filters change
-  useEffect(() => {
-    if (activeTab !== 'resume' && accounts.length > 0) {
-      fetchAccountTransactions(activeTab);
-    }
-  }, [
-    debouncedSearchTerms,
-    selectedCategories,
-    selectedTypes,
-    selectedDateRanges,
-    pages,
-    pageSizes,
-  ]);
+    return acc;
+  }, {} as Record<string, { accountName: string; transactions: Transaction[] }>);
 
   // Handle transaction click
   const handleTransactionClick = (transaction: Transaction) => {
@@ -397,6 +344,17 @@ export function TransactionsClient() {
     return ['all', 'CREDIT', 'DEBIT'];
   };
 
+  // Determine loading state
+  const isLoading =
+    isLoadingAccounts ||
+    (activeTab !== 'resume' && isLoadingTransactions) ||
+    (activeTab === 'resume' && isLoadingResumeTransactions);
+
+  // Determine error state
+  const error =
+    accountsError ||
+    (activeTab === 'resume' && resumeTransactionsError ? 'Failed to load transactions' : null);
+
   return (
     <div className="space-y-6 pb-8">
       <div className="flex justify-between items-center">
@@ -404,7 +362,7 @@ export function TransactionsClient() {
       </div>
 
       <div className="glass-card rounded-xl p-5">
-        {loading && accounts.length === 0 ? (
+        {isLoading && accounts.length === 0 ? (
           <div className="space-y-4">
             <Skeleton className="h-10 w-[300px] mb-4" />
             <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -422,7 +380,7 @@ export function TransactionsClient() {
         ) : error ? (
           <div className="text-center py-8 text-gray-400">
             <Info className="mx-auto mb-3 text-gray-500" size={24} />
-            <p>{error}</p>
+            <p>{error instanceof Error ? error.message : 'An error occurred'}</p>
             <Button
               variant="link"
               className="mt-2 text-finance-accent"
@@ -455,7 +413,7 @@ export function TransactionsClient() {
             </TabsList>
 
             <TabsContent value="resume">
-              {loading ? (
+              {isLoadingResumeTransactions ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <Skeleton key={i} className="h-40 w-full" />
@@ -471,7 +429,7 @@ export function TransactionsClient() {
 
             {accounts.map((account) => (
               <TabsContent key={account.id} value={account.id}>
-                {loading && activeTab === account.id ? (
+                {isLoadingTransactions && activeTab === account.id ? (
                   <div className="space-y-4">
                     <div className="flex flex-col md:flex-row gap-4 mb-6">
                       <Skeleton className="h-10 w-full md:w-1/2" />
@@ -488,15 +446,15 @@ export function TransactionsClient() {
                 ) : (
                   <TransactionTable
                     accountId={account.id}
-                    transactions={transactionsByAccount[account.id] || []}
+                    transactions={activeAccountData?.transactions || []}
                     categories={categories}
                     searchTerm={searchTerms[account.id] || ''}
                     selectedCategory={selectedCategories[account.id] || 'all'}
                     selectedType={selectedTypes[account.id] || 'all'}
                     selectedDateRange={selectedDateRanges[account.id] || 'all'}
                     currentPage={pages[account.id] || 1}
-                    totalPages={totalPages[account.id] || 1}
-                    totalTransactions={totalTransactions[account.id] || 0}
+                    totalPages={activeAccountData?.totalPages || 1}
+                    totalTransactions={activeAccountData?.total || 0}
                     pageSize={pageSizes[account.id] || 100}
                     onSearchChange={handleSearchChange}
                     onCategoryChange={handleCategoryChange}

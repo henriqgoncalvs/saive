@@ -1,47 +1,49 @@
 @import 'tailwindcss';
 
-@layer base {
-  :root {
-    /* Dark mode values inspired by the references */
-    --background: 225 30% 6%;
-    --foreground: 0 0% 98%;
+@theme {
+  /* Core colors */
+  --color-background: #0e1117;
+  --color-foreground: #fafafa;
+  --color-card: #12151f;
+  --color-card-foreground: #fafafa;
+  --color-popover: #12151f;
+  --color-popover-foreground: #fafafa;
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #1a1f2e;
+  --color-secondary-foreground: #fafafa;
+  --color-muted: #1e2436;
+  --color-muted-foreground: #9ca3af;
+  --color-accent: #3b82f6;
+  --color-accent-foreground: #fafafa;
+  --color-destructive: #7f1d1d;
+  --color-destructive-foreground: #fafafa;
+  --color-border: #1e2436;
+  --color-input: #1e2436;
+  --color-ring: #3b82f6;
 
-    --card: 226 30% 8%;
-    --card-foreground: 0 0% 98%;
+  /* Sidebar colors */
+  --color-sidebar-background: #0f1320;
+  --color-sidebar-foreground: #f0f4fa;
+  --color-sidebar-primary: #3b82f6;
+  --color-sidebar-primary-foreground: #ffffff;
+  --color-sidebar-accent: #1a1f2e;
+  --color-sidebar-accent-foreground: #f5f5f5;
+  --color-sidebar-border: #1e2436;
+  --color-sidebar-ring: #3b82f6;
 
-    --popover: 226 30% 8%;
-    --popover-foreground: 0 0% 98%;
+  /* Finance colors */
+  --color-finance-positive: #10b981;
+  --color-finance-negative: #ef4444;
+  --color-finance-neutral: #6b7280;
 
-    --primary: 215 100% 60%;
-    --primary-foreground: 0 0% 100%;
+  /* Border radius */
+  --radius-lg: 0.5rem;
+  --radius-md: 0.375rem;
+  --radius-sm: 0.25rem;
 
-    --secondary: 226 30% 12%;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 225 25% 15%;
-    --muted-foreground: 220 15% 65%;
-
-    --accent: 215 100% 60%;
-    --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 225 25% 15%;
-    --input: 225 25% 15%;
-    --ring: 215 100% 60%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 225 35% 8%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 215 100% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 25% 12%;
-    --sidebar-accent-foreground: 0 0% 96%;
-    --sidebar-border: 225 25% 15%;
-    --sidebar-ring: 215 100% 60%;
-  }
+  /* Fonts */
+  --font-sans: Satoshi, sans-serif;
 }
 
 @font-face {
@@ -54,17 +56,17 @@
 
 @layer base {
   * {
-    border-color: hsl(var(--border));
+    border-color: var(--color-border);
   }
 
   *::selection {
-    background-color: hsl(var(--primary) / 0.1);
-    color: hsl(var(--primary));
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--color-primary);
   }
 
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    background-color: var(--color-background);
+    color: var(--color-foreground);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: 'ss01', 'ss02', 'cv01', 'cv02', 'cv03';
@@ -237,7 +239,7 @@
 
 /* Enhanced button styles */
 .btn-gradient {
-  background: linear-gradient(to right, var(--sidebar-primary), rgba(var(--sidebar-primary), 0.7));
+  background: linear-gradient(to right, #3b82f6, rgba(59, 130, 246, 0.7));
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -305,7 +307,7 @@
 }
 
 .sidebar-toggle:hover {
-  background-color: hsl(var(--sidebar-accent));
+  background-color: #1a1f2e;
   transform: translateX(2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
@@ -328,69 +330,7 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  background-color: hsl(var(--sidebar-background));
-  border: 1px solid hsl(var(--sidebar-border));
+  background-color: #0f1320;
+  border: 1px solid #1e2436;
   border-radius: 0 4px 4px 0;
 }
-
-/* Add this to your global CSS if it doesn't exist already */
-.bg-noise {
-  background-image: url('/noise.png');
-  background-repeat: repeat;
-}
-
-.bg-sidebar {
-  background-color: hsl(var(--sidebar-background));
-}
-
-/* Solid primary color palette based on #11151f */
-.bg-primary-solid {
-  background-color: #11151f;
-}
-
-.bg-primary-solid-light {
-  background-color: #1a2030;
-}
-
-.bg-primary-solid-lighter {
-  background-color: #232940;
-}
-
-.bg-primary-solid-dark {
-  background-color: #0d1119;
-}
-
-.bg-primary-solid-darker {
-  background-color: #090c12;
-}
-
-/* Add noise effect to primary colors */
-.bg-primary-solid.bg-noise,
-.bg-primary-solid-light.bg-noise,
-.bg-primary-solid-lighter.bg-noise,
-.bg-primary-solid-dark.bg-noise,
-.bg-primary-solid-darker.bg-noise {
-  position: relative;
-}
-
-.bg-primary-solid.bg-noise::before,
-.bg-primary-solid-light.bg-noise::before,
-.bg-primary-solid-lighter.bg-noise::before,
-.bg-primary-solid-dark.bg-noise::before,
-.bg-primary-solid-darker.bg-noise::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0.03;
-  z-index: 1;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-}
-
-/* Remove this since we're applying the styles directly in the component */
-/* .select-content {
-  @apply bg-sidebar bg-noise;
-} */
